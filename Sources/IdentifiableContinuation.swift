@@ -52,6 +52,24 @@ public func withThrowingIdentifiableContinuation<T>(
 }
 
 @inlinable
+public func withIdentifiableUnsafeContinuation<T>(
+    body: (IdentifiableContinuation<T, Never>) -> Void
+) async -> T {
+    await withUnsafeContinuation {
+        body(IdentifiableContinuation(storage: .unsafe($0)))
+    }
+}
+
+@inlinable
+public func withThrowingIdentifiableUnsafeContinuation<T>(
+    body: (IdentifiableContinuation<T, Error>) -> Void
+) async throws -> T {
+    try await withUnsafeThrowingContinuation {
+        body(IdentifiableContinuation(storage: .unsafe($0)))
+    }
+}
+
+@inlinable
 public func withIdentifiableContinuation<T>(
     function: String = #function,
     body: (IdentifiableContinuation<T, Never>) -> Void,
@@ -92,6 +110,64 @@ public func withThrowingIdentifiableContinuation<T>(
     return try await withTaskCancellationHandler {
         try await withCheckedThrowingContinuation(function: function) {
             body(IdentifiableContinuation(id: id, storage: .checked($0)))
+            let isCancelled = state.withCriticalRegion {
+                $0.isStarted = true
+                return $0.isCancelled
+            }
+            if isCancelled {
+                onCancel(id)
+            }
+        }
+    } onCancel: {
+        let isStarted = state.withCriticalRegion {
+            $0.isCancelled = true
+            return $0.isStarted
+        }
+        if isStarted {
+            onCancel(id)
+        }
+    }
+}
+
+@inlinable
+public func withIdentifiableUnsafeContinuation<T>(
+    body: (IdentifiableContinuation<T, Never>) -> Void,
+    onCancel: (IdentifiableContinuation<T, Never>.ID) -> Void
+) async -> T {
+    let id = IdentifiableContinuation<T, Never>.ID()
+    let state = LockedState(state: (isStarted: false, isCancelled: false))
+    return await withTaskCancellationHandler {
+        await withUnsafeContinuation {
+            body(IdentifiableContinuation(id: id, storage: .unsafe($0)))
+            let isCancelled = state.withCriticalRegion {
+                $0.isStarted = true
+                return $0.isCancelled
+            }
+            if isCancelled {
+                onCancel(id)
+            }
+        }
+    } onCancel: {
+        let isStarted = state.withCriticalRegion {
+            $0.isCancelled = true
+            return $0.isStarted
+        }
+        if isStarted {
+            onCancel(id)
+        }
+    }
+}
+
+@inlinable
+public func withThrowingIdentifiableUnsafeContinuation<T>(
+    body: (IdentifiableContinuation<T, Error>) -> Void,
+    onCancel: (IdentifiableContinuation<T, Error>.ID) -> Void
+) async throws -> T {
+    let id = IdentifiableContinuation<T, Error>.ID()
+    let state = LockedState(state: (isStarted: false, isCancelled: false))
+    return try await withTaskCancellationHandler {
+        try await withUnsafeThrowingContinuation {
+            body(IdentifiableContinuation(id: id, storage: .unsafe($0)))
             let isCancelled = state.withCriticalRegion {
                 $0.isStarted = true
                 return $0.isCancelled

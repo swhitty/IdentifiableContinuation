@@ -44,6 +44,13 @@ let val: String? = await withIdentifiableContinuation { continuation in
 
 > Note: The `onCancel:` handler is guaranteed to be called after the continuation body even if the task is already cancelled. Manually check `Task.isCancelled` before creating the continuation to prevent performing unrequired work.
 
+## UnsafeContinuation
+
+`withIdentifiableContinuation` internally uses a `CheckedContinunation`. To use `UnsafeContinuation` use the unsafe functions:
+
+- `await withIdentifiableUnsafeContinuation { .. }`
+- `try await withThrowingIdentifiableUnsafeContinuation { ... }`
+
 # Credits
 
 IdentifiableContinuation is primarily the work of [Simon Whitty](https://github.com/swhitty).
