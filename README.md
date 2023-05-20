@@ -7,7 +7,7 @@
 
 # Introduction
 
-**IdentifiableContinuation** is a lightweight wrapper around [`CheckedContinuation`](https://developer.apple.com/documentation/swift/checkedcontinuation) and [`UnsafeContinuation`](https://developer.apple.com/documentation/swift/unsafecontinuation) that conforms to [`Identifiable`](https://developer.apple.com/documentation/swift/identifiable) and including an easy to use cancellation handler with the id.
+**IdentifiableContinuation** is a lightweight wrapper around [`CheckedContinuation`](https://developer.apple.com/documentation/swift/checkedcontinuation) and [`UnsafeContinuation`](https://developer.apple.com/documentation/swift/unsafecontinuation) that conforms to [`Identifiable`](https://developer.apple.com/documentation/swift/identifiable) and includes an easy to use cancellation handler with the id.
 
 # Installation
 
