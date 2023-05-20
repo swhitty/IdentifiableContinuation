@@ -31,22 +31,25 @@
 
 import Foundation
 
+@inlinable
 public func withThrowingIdentifiableContinuation<T>(
     body: (IdentifiableContinuation<T, Error>) -> Void
 ) async throws -> T {
     try await withUnsafeThrowingContinuation {
-        body(IdentifiableContinuation(id: .init(), storage: .unsafe($0)))
+        body(IdentifiableContinuation(storage: .unsafe($0)))
     }
 }
 
+@inlinable
 public func withIdentifiableContinuation<T>(
     body: (IdentifiableContinuation<T, Never>) -> Void
 ) async -> T {
     await withUnsafeContinuation {
-        body(IdentifiableContinuation(id: .init(), storage: .unsafe($0)))
+        body(IdentifiableContinuation(storage: .unsafe($0)))
     }
 }
 
+@inlinable
 public func withIdentifiableContinuation<T>(
     body: (IdentifiableContinuation<T, Never>) -> Void,
     onCancel: (IdentifiableContinuation<T, Never>.ID) -> Void
@@ -75,6 +78,7 @@ public func withIdentifiableContinuation<T>(
     }
 }
 
+@inlinable
 public func withThrowingIdentifiableContinuation<T>(
     body: (IdentifiableContinuation<T, Error>) -> Void,
     onCancel: (IdentifiableContinuation<T, Error>.ID) -> Void
@@ -108,10 +112,16 @@ public struct IdentifiableContinuation<T, E>: Sendable, Identifiable where E : E
     public let id: ID
 
     public struct ID: Hashable, Sendable {
-        private let uuid = UUID()
+        private let uuid: UUID
+
+        @usableFromInline
+        init() {
+            self.uuid = UUID()
+        }
     }
 
-    fileprivate init(id: ID, storage: Storage) {
+    @usableFromInline
+    init(id: ID = .init(), storage: Storage) {
         self.id = id
         self.storage = storage
     }
@@ -136,20 +146,24 @@ public struct IdentifiableContinuation<T, E>: Sendable, Identifiable where E : E
         }
     }
 
-    fileprivate enum Storage {
+    @usableFromInline
+    enum Storage: Sendable {
         case checked(CheckedContinuation<T, E>)
         case unsafe(UnsafeContinuation<T, E>)
     }
 }
 
-private final class LockedState<State> {
+@usableFromInline
+final class LockedState<State> {
     private let lock = NSLock()
     private var state: State
 
+    @usableFromInline
     init(state: State) {
         self.state = state
     }
 
+    @usableFromInline
     func withCriticalRegion<R>(_ critical: (inout State) throws -> R) rethrows -> R {
         lock.lock()
         defer { lock.unlock() }
