@@ -46,14 +46,15 @@ let val: String? = await withIdentifiableContinuation { continuation in
 
 ## Checked/UnsafeContinuation
 
-`IdentifiableContinuation` internally stores either a `CheckedContinuation` or `UnsafeContinuation`.
+`IdentifiableContinuation` internally stores either a checked or unsafe continuation.
 
-`CheckedContinuation` is used by the default methods:
+[`CheckedContinuation`](https://developer.apple.com/documentation/swift/checkedcontinuation) is used by the default methods:
 
 - `await withIdentifiableContinuation { .. }`
 - `try await withThrowingIdentifiableContinuation { ... }`
 
-`UnsafeContinuation` is used by the unsafe methods:
+
+[`UnsafeContinuation`](https://developer.apple.com/documentation/swift/unsafecontinuation) is used by the unsafe methods:
 
 - `await withIdentifiableUnsafeContinuation { .. }`
 - `try await withThrowingIdentifiableUnsafeContinuation { ... }`
