@@ -46,7 +46,9 @@ let val: String? = await withIdentifiableContinuation { continuation in
 
 ## UnsafeContinuation
 
-`withIdentifiableContinuation` internally uses a `CheckedContinunation`. To use `UnsafeContinuation` use the unsafe functions:
+`withIdentifiableContinuation` internally uses a `CheckedContinunation`. 
+
+To use `UnsafeContinuation` use the unsafe functions:
 
 - `await withIdentifiableUnsafeContinuation { .. }`
 - `try await withThrowingIdentifiableUnsafeContinuation { ... }`
