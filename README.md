@@ -50,14 +50,14 @@ let val: String? = await withIdentifiableContinuation { continuation in
 
 [`CheckedContinuation`](https://developer.apple.com/documentation/swift/checkedcontinuation) is used by the default methods:
 
-- `await withIdentifiableContinuation { .. }`
-- `try await withThrowingIdentifiableContinuation { ... }`
+- `withIdentifiableContinuation`
+- `withThrowingIdentifiableContinuation`
 
 
 [`UnsafeContinuation`](https://developer.apple.com/documentation/swift/unsafecontinuation) is used by the unsafe methods:
 
-- `await withIdentifiableUnsafeContinuation { .. }`
-- `try await withThrowingIdentifiableUnsafeContinuation { ... }`
+- `withIdentifiableUnsafeContinuation`
+- `withThrowingIdentifiableUnsafeContinuation`
 
 # Credits
 
