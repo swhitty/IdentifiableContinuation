@@ -33,7 +33,7 @@ let val: String = await withIdentifiableContinuation {
 The continuation includes an `id` that can be attached to an asynchronous task enabling the `onCancel` handler to cancel it.  
 
 ```swift
-let val: String = await withIdentifiableContinuation { continuation in
+let val: String? = await withIdentifiableContinuation { continuation in
   foo.startTask(for: continuation.id) { result
      continuation.resume(returning: result)
   }
