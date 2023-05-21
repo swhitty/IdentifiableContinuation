@@ -42,6 +42,13 @@ final class IdentifiableContinuationTests: XCTestCase {
         XCTAssertEqual(val, "Fish")
     }
 
+    func testResumesWithResult() async {
+        let val = await withIdentifiableContinuation {
+            $0.resume(with: .success("Chips"))
+        }
+        XCTAssertEqual(val, "Chips")
+    }
+
     func testCancels_After_Created() async {
         let waiter = Waiter<String?, Never>()
 
@@ -91,7 +98,6 @@ final class IdentifiableContinuationTests: XCTestCase {
         }
     }
 
-
     func testThrowingCancels_After_Created() async {
         let waiter = Waiter<String, Error>()
 
@@ -135,6 +141,13 @@ final class IdentifiableContinuationTests: XCTestCase {
             $0.resume(returning: "Fish")
         }
         XCTAssertEqual(val, "Fish")
+    }
+
+    func testUnsafeResumesWithResult() async {
+        let val = await withIdentifiableUnsafeContinuation {
+            $0.resume(with: .success("Chips"))
+        }
+        XCTAssertEqual(val, "Chips")
     }
 
     func testUnsafeCancels_After_Created() async {

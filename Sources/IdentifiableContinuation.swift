@@ -231,6 +231,15 @@ public struct IdentifiableContinuation<T, E>: Sendable, Identifiable where E : E
         }
     }
 
+    public func resume(with result: Result<T, E>) {
+        switch storage {
+        case .checked(let continuation):
+            continuation.resume(with: result)
+        case .unsafe(let continuation):
+            continuation.resume(with: result)
+        }
+    }
+
     @usableFromInline
     enum Storage: Sendable {
         case checked(CheckedContinuation<T, E>)
