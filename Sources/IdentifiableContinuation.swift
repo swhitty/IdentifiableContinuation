@@ -191,12 +191,17 @@ public struct IdentifiableContinuation<T, E>: Sendable, Identifiable where E : E
 
     public let id: ID
 
-    public struct ID: Hashable, Sendable {
-        private let uuid: UUID
+    public final class ID: Hashable, Sendable {
 
         @usableFromInline
-        init() {
-            self.uuid = UUID()
+        init() { }
+
+        public func hash(into hasher: inout Hasher) {
+            ObjectIdentifier(self).hash(into: &hasher)
+        }
+
+        public static func == (lhs: IdentifiableContinuation<T, E>.ID, rhs: IdentifiableContinuation<T, E>.ID) -> Bool {
+            lhs === rhs
         }
     }
 
