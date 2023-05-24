@@ -46,9 +46,9 @@ let val: String? = await withIdentifiableContinuation { continuation in
 
 ```swift
 let val: String? = await withIdentifiableContinuation {
-  await actor.insertContinuation($0)
+  await someActor.insertContinuation($0)
 } onCancel: {
-  await actor.cancelContinuation(for: $0)
+  await someActor.cancelContinuation(for: $0)
 }
 ```
 
