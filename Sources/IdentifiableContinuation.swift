@@ -90,6 +90,18 @@ public func withIdentifiableContinuation<T>(
 }
 
 @inlinable
+public func withIdentifiableContinuation<T>(
+    function: String = #function,
+    body: (IdentifiableContinuation<T, Never>) async -> Void,
+    onCancel: (IdentifiableContinuation<T, Never>.ID) async -> Void
+) async -> T {
+    return await withoutActuallyEscaping(body, onCancel, result: T.self) {
+        let state = AsyncLockedState(body: $0, onCancel: $1)
+        return await state.startCheckedContinuation(function: function)
+    }
+}
+
+@inlinable
 public func withThrowingIdentifiableContinuation<T>(
     function: String = #function,
     body: (IdentifiableContinuation<T, Error>) -> Void,
@@ -106,6 +118,18 @@ public func withThrowingIdentifiableContinuation<T>(
         } onCancel: {
             state.cancel(withID: id)
         }
+    }
+}
+
+@inlinable
+public func withThrowingIdentifiableContinuation<T>(
+    function: String = #function,
+    body: (IdentifiableContinuation<T, Error>) async -> Void,
+    onCancel: (IdentifiableContinuation<T, Error>.ID) async -> Void
+) async throws -> T {
+    try await withoutActuallyEscaping(body, onCancel, result: T.self) {
+        let state = AsyncLockedState(body: $0, onCancel: $1)
+        return try await state.startCheckedThrowingContinuation(function: function)
     }
 }
 
@@ -129,6 +153,17 @@ public func withIdentifiableUnsafeContinuation<T>(
 }
 
 @inlinable
+public func withIdentifiableUnsafeContinuation<T>(
+    body: (IdentifiableContinuation<T, Never>) async -> Void,
+    onCancel: (IdentifiableContinuation<T, Never>.ID) async -> Void
+) async -> T {
+    await withoutActuallyEscaping(body, onCancel, result: T.self) {
+        let state = AsyncLockedState(body: $0, onCancel: $1)
+        return await state.startUnsafeContinuation()
+    }
+}
+
+@inlinable
 public func withThrowingIdentifiableUnsafeContinuation<T>(
     body: (IdentifiableContinuation<T, Error>) -> Void,
     onCancel: (IdentifiableContinuation<T, Error>.ID) -> Void
@@ -144,6 +179,17 @@ public func withThrowingIdentifiableUnsafeContinuation<T>(
         } onCancel: {
             state.cancel(withID: id)
         }
+    }
+}
+
+@inlinable
+public func withThrowingIdentifiableUnsafeContinuation<T>(
+    body: (IdentifiableContinuation<T, Error>) async -> Void,
+    onCancel: (IdentifiableContinuation<T, Error>.ID) async -> Void
+) async throws -> T {
+    try await withoutActuallyEscaping(body, onCancel, result: T.self) {
+        let state = AsyncLockedState(body: $0, onCancel: $1)
+        return try await state.startUnsafeThrowingContinuation()
     }
 }
 
@@ -262,11 +308,183 @@ final class LockedState<T, Failure: Error>: @unchecked Sendable {
 }
 
 @usableFromInline
+final class AsyncLockedState<T, Failure: Error>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var state: State
+    private let body: (IdentifiableContinuation<T, Failure>) async -> Void
+    private let onCancel: (IdentifiableContinuation<T, Failure>.ID) async -> Void
+
+    @usableFromInline
+    struct State {
+        @usableFromInline
+        var bodyTask: Task<Void, Never>?
+        @usableFromInline
+        var cancelTask: Task<Void, Never>?
+        @usableFromInline
+        var didCompleteBody: Bool = false
+        @usableFromInline
+        var isCancelled: Bool = false
+        @usableFromInline
+        var didCancel: Bool = false
+    }
+
+    @usableFromInline
+    init(body: @escaping (IdentifiableContinuation<T, Failure>) async -> Void,
+         onCancel: @escaping (IdentifiableContinuation<T, Failure>.ID) async -> Void) {
+        self.state = State()
+        self.body = body
+        self.onCancel = onCancel
+    }
+
+    @usableFromInline
+    func startCheckedContinuation(function: String) async -> T where Failure == Never {
+        let id = IdentifiableContinuation<T, Failure>.ID()
+        return await withTaskCancellationHandler {
+            let result = await withCheckedContinuation(function: function) {
+                let continuation = IdentifiableContinuation(id: id, storage: .checked($0))
+                start(with: continuation)
+            }
+            await waitForTasks()
+            return result
+        } onCancel: {
+            cancel(withID: id)
+        }
+    }
+
+    @usableFromInline
+    func startCheckedThrowingContinuation(function: String) async throws -> T where Failure == Error {
+        let id = IdentifiableContinuation<T, Failure>.ID()
+        return try await withTaskCancellationHandler {
+            do {
+                let result = try await withCheckedThrowingContinuation(function: function) {
+                    let continuation = IdentifiableContinuation(id: id, storage: .checked($0))
+                    start(with: continuation)
+                }
+                await waitForTasks()
+                return result
+            } catch {
+                await waitForTasks()
+                throw error
+            }
+        } onCancel: {
+            cancel(withID: id)
+        }
+    }
+
+    @usableFromInline
+    func startUnsafeContinuation() async -> T where Failure == Never {
+        let id = IdentifiableContinuation<T, Failure>.ID()
+        return await withTaskCancellationHandler {
+            let result = await withUnsafeContinuation {
+                let continuation = IdentifiableContinuation(id: id, storage: .unsafe($0))
+                start(with: continuation)
+            }
+            await waitForTasks()
+            return result
+        } onCancel: {
+            cancel(withID: id)
+        }
+    }
+
+    @usableFromInline
+    func startUnsafeThrowingContinuation() async throws -> T where Failure == Error {
+        let id = IdentifiableContinuation<T, Failure>.ID()
+        return try await withTaskCancellationHandler {
+            do {
+                let result = try await withUnsafeThrowingContinuation {
+                    let continuation = IdentifiableContinuation(id: id, storage: .unsafe($0))
+                    start(with: continuation)
+                }
+                await waitForTasks()
+                return result
+            } catch {
+                await waitForTasks()
+                throw error
+            }
+        } onCancel: {
+            cancel(withID: id)
+        }
+    }
+
+    @usableFromInline
+    func start(with continuation: IdentifiableContinuation<T, Failure>) {
+        let task = Task {
+            await body(continuation)
+            let performCancel = withCriticalRegion {
+                $0.didCompleteBody = true
+                if $0.isCancelled && !$0.didCancel {
+                    $0.didCancel = true
+                    return true
+                } else {
+                    return false
+                }
+            }
+            if performCancel {
+                await onCancel(continuation.id)
+            }
+        }
+        withCriticalRegion {
+            $0.bodyTask = task
+        }
+    }
+
+    @usableFromInline
+    func cancel(withID id: IdentifiableContinuation<T, Failure>.ID) {
+        let task = Task {
+            let performCancel = withCriticalRegion {
+                $0.isCancelled = true
+                $0.bodyTask?.cancel()
+                if $0.didCompleteBody && !$0.didCancel {
+                    $0.didCancel = true
+                    return true
+                } else {
+                    return false
+                }
+            }
+            if performCancel {
+                await onCancel(id)
+            }
+        }
+        withCriticalRegion {
+            $0.cancelTask = task
+        }
+    }
+
+    @usableFromInline
+    func waitForTasks() async {
+        let (bodyTask, cancelTask) = withCriticalRegion {
+            ($0.bodyTask, $0.cancelTask)
+        }
+        _ = await (bodyTask?.value, cancelTask?.value)
+    }
+
+    @usableFromInline
+    func withCriticalRegion<R>(_ critical: (inout State) throws -> R) rethrows -> R {
+        lock.lock()
+        defer { lock.unlock() }
+        return try critical(&state)
+    }
+}
+
+@usableFromInline
 func withoutActuallyEscaping<T, Failure: Error, U>(
     _ c1: (IdentifiableContinuation<T, Failure>) -> Void,
     _ c2: (IdentifiableContinuation<T, Failure>.ID) -> Void,
     result: U.Type,
     do body: (@escaping (IdentifiableContinuation<T, Failure>) -> Void, @escaping (IdentifiableContinuation<T, Failure>.ID) -> Void) async throws -> U) async rethrows -> U {
+    try await withoutActuallyEscaping(c1) { (escapingC1) -> U in
+        try await withoutActuallyEscaping(c2) { (escapingC2) -> U in
+            try await body(escapingC1, escapingC2)
+        }
+    }
+}
+
+@usableFromInline
+func withoutActuallyEscaping<T, Failure: Error, U>(
+    _ c1: (IdentifiableContinuation<T, Failure>) async -> Void,
+    _ c2: (IdentifiableContinuation<T, Failure>.ID) async -> Void,
+    result: U.Type,
+    do body: (@escaping (IdentifiableContinuation<T, Failure>) async -> Void, @escaping (IdentifiableContinuation<T, Failure>.ID) async -> Void) async throws -> U) async rethrows -> U {
     try await withoutActuallyEscaping(c1) { (escapingC1) -> U in
         try await withoutActuallyEscaping(c2) { (escapingC2) -> U in
             try await body(escapingC1, escapingC2)

@@ -29,39 +29,46 @@
 //  SOFTWARE.
 //
 
-
 import IdentifiableContinuation
 import XCTest
 
-final class IdentifiableContinuationTests: XCTestCase {
-
-    func testResumesWithValue() async {
-        let val = await withIdentifiableContinuation {
-            $0.resume(returning: "Fish")
-        }
-        XCTAssertEqual(val, "Fish")
-    }
-
-    func testResumesWithResult() async {
-        let val = await withIdentifiableContinuation {
-            $0.resume(with: .success("Chips"))
-        }
-        XCTAssertEqual(val, "Chips")
-    }
+final class IdentifiableContinuationAsyncTests: XCTestCase {
 
     func testCancels_After_Created() async {
         let waiter = Waiter<String?, Never>()
 
         let task = Task<String?, Never> {
             await withIdentifiableContinuation {
-                waiter.addContinuation($0)
+                await waiter.addContinuation($0)
             } onCancel: {
-                waiter.resumeID($0, returning: nil)
+                await waiter.resumeID($0, returning: nil)
             }
         }
 
         await Task.sleep(seconds: 0.1)
-        XCTAssertFalse(waiter.isEmpty)
+        var isEmpty = await waiter.isEmpty
+        XCTAssertFalse(isEmpty)
+        task.cancel()
+
+        let val = await task.value
+        XCTAssertNil(val)
+
+        isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
+    }
+
+    func testCancelsBody() async {
+        let waiter = Waiter<String?, Never>()
+
+        let task = Task<String?, Never> {
+            await withIdentifiableContinuation {
+                await Task.sleep(seconds: 1)
+                await waiter.addContinuation($0)
+            } onCancel: {
+                await waiter.resumeID($0, returning: nil)
+            }
+        }
+
         task.cancel()
 
         let val = await task.value
@@ -74,28 +81,18 @@ final class IdentifiableContinuationTests: XCTestCase {
         let task = Task<String?, Never> {
             await Task.sleep(seconds: 0.1)
             return await withIdentifiableContinuation {
-                waiter.addContinuation($0)
+                await waiter.addContinuation($0)
             } onCancel: {
-                waiter.resumeID($0, returning: nil)
+                await waiter.resumeID($0, returning: nil)
             }
         }
 
-        XCTAssertTrue(waiter.isEmpty)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
         task.cancel()
 
         let val = await task.value
         XCTAssertNil(val)
-    }
-
-    func testThrowingResumesWithError() async {
-        do {
-            let _: Int = try await withThrowingIdentifiableContinuation {
-                $0.resume(throwing: CancellationError())
-            }
-            XCTFail("Expected error")
-        } catch {
-            XCTAssertTrue(error is CancellationError)
-        }
     }
 
     func testThrowingCancels_After_Created() async {
@@ -103,14 +100,15 @@ final class IdentifiableContinuationTests: XCTestCase {
 
         let task = Task<String?, Error> {
             try await withThrowingIdentifiableContinuation {
-                waiter.addContinuation($0)
+                await waiter.addContinuation($0)
             } onCancel: {
-                waiter.resumeID($0, throwing: CancellationError())
+                await waiter.resumeID($0, throwing: CancellationError())
             }
         }
 
         await Task.sleep(seconds: 0.1)
-        XCTAssertFalse(waiter.isEmpty)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertFalse(isEmpty)
         task.cancel()
 
         let val = await task.result
@@ -123,31 +121,18 @@ final class IdentifiableContinuationTests: XCTestCase {
         let task = Task<String?, Error> {
             await Task.sleep(seconds: 0.1)
             return try await withThrowingIdentifiableContinuation {
-                waiter.addContinuation($0)
+                await waiter.addContinuation($0)
             } onCancel: {
-                waiter.resumeID($0, throwing: CancellationError())
+                await waiter.resumeID($0, throwing: CancellationError())
             }
         }
 
-        XCTAssertTrue(waiter.isEmpty)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
         task.cancel()
 
         let val = await task.result
         XCTAssertThrowsError(try val.get())
-    }
-
-    func testUnsafeResumesWithValue() async {
-        let val = await withIdentifiableUnsafeContinuation {
-            $0.resume(returning: "Fish")
-        }
-        XCTAssertEqual(val, "Fish")
-    }
-
-    func testUnsafeResumesWithResult() async {
-        let val = await withIdentifiableUnsafeContinuation {
-            $0.resume(with: .success("Chips"))
-        }
-        XCTAssertEqual(val, "Chips")
     }
 
     func testUnsafeCancels_After_Created() async {
@@ -155,14 +140,15 @@ final class IdentifiableContinuationTests: XCTestCase {
 
         let task = Task<String?, Never> {
             await withIdentifiableUnsafeContinuation {
-                waiter.addContinuation($0)
+                await waiter.addContinuation($0)
             } onCancel: {
-                waiter.resumeID($0, returning: nil)
+                await waiter.resumeID($0, returning: nil)
             }
         }
 
         await Task.sleep(seconds: 0.1)
-        XCTAssertFalse(waiter.isEmpty)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertFalse(isEmpty)
         task.cancel()
 
         let val = await task.value
@@ -175,44 +161,34 @@ final class IdentifiableContinuationTests: XCTestCase {
         let task = Task<String?, Never> {
             await Task.sleep(seconds: 0.1)
             return await withIdentifiableUnsafeContinuation {
-                waiter.addContinuation($0)
+                await waiter.addContinuation($0)
             } onCancel: {
-                waiter.resumeID($0, returning: nil)
+                await waiter.resumeID($0, returning: nil)
             }
         }
 
-        XCTAssertTrue(waiter.isEmpty)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
         task.cancel()
 
         let val = await task.value
         XCTAssertNil(val)
     }
 
-    func testUnsafeThrowingResumesWithError() async {
-        do {
-            let _: Int = try await withThrowingIdentifiableUnsafeContinuation {
-                $0.resume(throwing: CancellationError())
-            }
-            XCTFail("Expected error")
-        } catch {
-            XCTAssertTrue(error is CancellationError)
-        }
-    }
-
-
     func testUnsafeThrowingCancels_After_Created() async {
         let waiter = Waiter<String, Error>()
 
         let task = Task<String?, Error> {
             try await withThrowingIdentifiableUnsafeContinuation {
-                waiter.addContinuation($0)
+                await waiter.addContinuation($0)
             } onCancel: {
-                waiter.resumeID($0, throwing: CancellationError())
+                await waiter.resumeID($0, throwing: CancellationError())
             }
         }
 
         await Task.sleep(seconds: 0.1)
-        XCTAssertFalse(waiter.isEmpty)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertFalse(isEmpty)
         task.cancel()
 
         let val = await task.result
@@ -225,13 +201,14 @@ final class IdentifiableContinuationTests: XCTestCase {
         let task = Task<String?, Error> {
             await Task.sleep(seconds: 0.1)
             return try await withThrowingIdentifiableUnsafeContinuation {
-                waiter.addContinuation($0)
+                await waiter.addContinuation($0)
             } onCancel: {
-                waiter.resumeID($0, throwing: CancellationError())
+                await waiter.resumeID($0, throwing: CancellationError())
             }
         }
 
-        XCTAssertTrue(waiter.isEmpty)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
         task.cancel()
 
         let val = await task.result
@@ -239,34 +216,29 @@ final class IdentifiableContinuationTests: XCTestCase {
     }
 }
 
-private final class Waiter<T, E: Error> {
+private actor Waiter<T, E: Error> {
     typealias Continuation = IdentifiableContinuation<T, E>
 
     private var waiting = [Continuation.ID: Continuation]()
-    private let lock = NSLock()
 
     var isEmpty: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return waiting.isEmpty
+        waiting.isEmpty
     }
 
     func addContinuation(_ continuation: Continuation) {
-        lock.lock()
         waiting[continuation.id] = continuation
-        lock.unlock()
     }
 
     func resumeID(_ id: Continuation.ID, returning value: T) {
-        lock.lock()
-        waiting[id]!.resume(returning: value)
-        lock.unlock()
+        if let continuation = waiting.removeValue(forKey: id) {
+            continuation.resume(returning: value)
+        }
     }
 
     func resumeID(_ id: Continuation.ID, throwing error: E) {
-        lock.lock()
-        waiting[id]!.resume(throwing: error)
-        lock.unlock()
+        if let continuation = waiting.removeValue(forKey: id) {
+            continuation.resume(throwing: error)
+        }
     }
 }
 
