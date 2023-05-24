@@ -42,6 +42,16 @@ let val: String? = await withIdentifiableContinuation { continuation in
 }
 ```
 
+`async` closures can be used making it easy to store the continuations within an actor:
+
+```swift
+let val: String? = await withIdentifiableContinuation {
+  await actor.insertContinuation($0)
+} onCancel: {
+  await actor.cancelContinuation(for: $0)
+}
+```
+
 > Note: The `onCancel:` handler is guaranteed to be called after the continuation body even if the task is already cancelled. Manually check `Task.isCancelled` before creating the continuation to prevent performing unrequired work.
 
 ## Checked/UnsafeContinuation
