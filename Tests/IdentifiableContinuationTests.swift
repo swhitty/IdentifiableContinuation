@@ -99,9 +99,9 @@ final class IdentifiableContinuationTests: XCTestCase {
     }
 
     func testThrowingCancels_After_Created() async {
-        let waiter = Waiter<String, Error>()
+        let waiter = Waiter<String, any Error>()
 
-        let task = Task<String?, Error> {
+        let task = Task<String?, any Error> {
             try await withThrowingIdentifiableContinuation {
                 waiter.addContinuation($0)
             } onCancel: {
@@ -118,9 +118,9 @@ final class IdentifiableContinuationTests: XCTestCase {
     }
 
     func testThrowingCancels_Before_Created() async {
-        let waiter = Waiter<String, Error>()
+        let waiter = Waiter<String, any Error>()
 
-        let task = Task<String?, Error> {
+        let task = Task<String?, any Error> {
             await Task.sleep(seconds: 0.1)
             return try await withThrowingIdentifiableContinuation {
                 waiter.addContinuation($0)
@@ -201,9 +201,9 @@ final class IdentifiableContinuationTests: XCTestCase {
 
 
     func testUnsafeThrowingCancels_After_Created() async {
-        let waiter = Waiter<String, Error>()
+        let waiter = Waiter<String, any Error>()
 
-        let task = Task<String?, Error> {
+        let task = Task<String?, any Error> {
             try await withThrowingIdentifiableUnsafeContinuation {
                 waiter.addContinuation($0)
             } onCancel: {
@@ -220,9 +220,9 @@ final class IdentifiableContinuationTests: XCTestCase {
     }
 
     func testUnsafeThrowingCancels_Before_Created() async {
-        let waiter = Waiter<String, Error>()
+        let waiter = Waiter<String, any Error>()
 
-        let task = Task<String?, Error> {
+        let task = Task<String?, any Error> {
             await Task.sleep(seconds: 0.1)
             return try await withThrowingIdentifiableUnsafeContinuation {
                 waiter.addContinuation($0)
@@ -239,7 +239,7 @@ final class IdentifiableContinuationTests: XCTestCase {
     }
 }
 
-private final class Waiter<T, E: Error> {
+private final class Waiter<T, E: Error>: @unchecked Sendable {
     typealias Continuation = IdentifiableContinuation<T, E>
 
     private var waiting = [Continuation.ID: Continuation]()

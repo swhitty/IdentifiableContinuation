@@ -1,4 +1,4 @@
-// swift-tools-version:5.8
+// swift-tools-version:5.7
 
 import PackageDescription
 
@@ -16,24 +16,12 @@ let package = Package(
     targets: [
         .target(
             name: "IdentifiableContinuation",
-            path: "Sources",
-            swiftSettings: .upcomingFeatures
+            path: "Sources"
         ),
         .testTarget(
             name: "IdentifiableContinuationTests",
             dependencies: ["IdentifiableContinuation"],
-            path: "Tests",
-            swiftSettings: .upcomingFeatures
+            path: "Tests"
         )
     ]
 )
-
-extension Array where Element == SwiftSetting {
-
-    static var upcomingFeatures: [SwiftSetting] {
-        [
-            .enableUpcomingFeature("ExistentialAny"),
-            .enableExperimentalFeature("StrictConcurrency")
-        ]
-    }
-}
