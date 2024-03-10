@@ -96,9 +96,9 @@ final class IdentifiableContinuationAsyncTests: XCTestCase {
     }
 
     func testThrowingCancels_After_Created() async {
-        let waiter = Waiter<String, Error>()
+        let waiter = Waiter<String, any Error>()
 
-        let task = Task<String?, Error> {
+        let task = Task<String?, any Error> {
             try await withThrowingIdentifiableContinuation {
                 await waiter.addContinuation($0)
             } onCancel: {
@@ -116,9 +116,9 @@ final class IdentifiableContinuationAsyncTests: XCTestCase {
     }
 
     func testThrowingCancels_Before_Created() async {
-        let waiter = Waiter<String, Error>()
+        let waiter = Waiter<String, any Error>()
 
-        let task = Task<String?, Error> {
+        let task = Task<String?, any Error> {
             await Task.sleep(seconds: 0.1)
             return try await withThrowingIdentifiableContinuation {
                 await waiter.addContinuation($0)
@@ -176,9 +176,9 @@ final class IdentifiableContinuationAsyncTests: XCTestCase {
     }
 
     func testUnsafeThrowingCancels_After_Created() async {
-        let waiter = Waiter<String, Error>()
+        let waiter = Waiter<String, any Error>()
 
-        let task = Task<String?, Error> {
+        let task = Task<String?, any Error> {
             try await withThrowingIdentifiableUnsafeContinuation {
                 await waiter.addContinuation($0)
             } onCancel: {
@@ -196,9 +196,9 @@ final class IdentifiableContinuationAsyncTests: XCTestCase {
     }
 
     func testUnsafeThrowingCancels_Before_Created() async {
-        let waiter = Waiter<String, Error>()
+        let waiter = Waiter<String, any Error>()
 
-        let task = Task<String?, Error> {
+        let task = Task<String?, any Error> {
             await Task.sleep(seconds: 0.1)
             return try await withThrowingIdentifiableUnsafeContinuation {
                 await waiter.addContinuation($0)
