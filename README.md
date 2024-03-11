@@ -34,8 +34,10 @@ This allows actors to synchronously start continuations and mutate their isolate
 
 ```swift
 let val: String = await withIdentifiableContinuation(isolation: self) {
+  // exectured within actor isolation so can immediatley mutate actor state
   continuations[$0.id] = $0
 } onCancel: { id in
+  // @Sendable closure executed outside of actor isolation requires `await` to mutate actor state
   Task { await self.cancelContinuation(with: id) }
 }
 ```
