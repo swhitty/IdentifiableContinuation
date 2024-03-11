@@ -29,249 +29,211 @@
 //  SOFTWARE.
 //
 
-
 import IdentifiableContinuation
 import XCTest
 
-final class IdentifiableContinuationTests: XCTestCase {
+final class IdentifiableContinuationAsyncTests: XCTestCase {
 
     func testResumesWithValue() async {
-        let val = await withIdentifiableContinuation {
+        let waiter = Waiter<String?, Never>()
+        let val = await waiter.identifiableContinuation {
             $0.resume(returning: "Fish")
         }
+
         XCTAssertEqual(val, "Fish")
     }
 
     func testResumesWithResult() async {
-        let val = await withIdentifiableContinuation {
+        let waiter = Waiter<String?, Never>()
+        let val = await waiter.identifiableContinuation {
             $0.resume(with: .success("Chips"))
         }
+
         XCTAssertEqual(val, "Chips")
     }
 
     func testCancels_After_Created() async {
         let waiter = Waiter<String?, Never>()
 
-        let task = Task<String?, Never> {
-            await withIdentifiableContinuation {
-                waiter.addContinuation($0)
-            } onCancel: {
-                waiter.resumeID($0, returning: nil)
-            }
-        }
-
+        let task = await waiter.makeTask(onCancel: nil)
         await Task.sleep(seconds: 0.1)
-        XCTAssertFalse(waiter.isEmpty)
+        var isEmpty = await waiter.isEmpty
+        XCTAssertFalse(isEmpty)
         task.cancel()
 
         let val = await task.value
         XCTAssertNil(val)
+
+        isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
     }
 
     func testCancels_Before_Created() async {
         let waiter = Waiter<String?, Never>()
 
-        let task = Task<String?, Never> {
-            await Task.sleep(seconds: 0.1)
-            return await withIdentifiableContinuation {
-                waiter.addContinuation($0)
-            } onCancel: {
-                waiter.resumeID($0, returning: nil)
-            }
-        }
-
-        XCTAssertTrue(waiter.isEmpty)
+        let task = await waiter.makeTask(delay: 1.0, onCancel: nil)
+        await Task.sleep(seconds: 0.1)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
         task.cancel()
 
         let val = await task.value
         XCTAssertNil(val)
+    }
+
+    func testThrowingResumesWithValue() async {
+        let waiter = Waiter<String, any Error>()
+        let task = Task {
+            try await waiter.throwingIdentifiableContinuation {
+                $0.resume(returning: "Fish")
+            }
+        }
+
+        let result = await task.result
+        XCTAssertEqual(try result.get(), "Fish")
     }
 
     func testThrowingResumesWithError() async {
-        do {
-            let _: Int = try await withThrowingIdentifiableContinuation {
+        let waiter = Waiter<String?, any Error>()
+        let task = Task<String, any Error> {
+            try await waiter.throwingIdentifiableContinuation {
                 $0.resume(throwing: CancellationError())
             }
-            XCTFail("Expected error")
-        } catch {
-            XCTAssertTrue(error is CancellationError)
         }
+
+        let result = await task.result
+        XCTAssertThrowsError(try result.get())
+    }
+
+    func testThrowingResumesWithResult() async {
+        let waiter = Waiter<String?, any Error>()
+        let task = Task<String, any Error> {
+            try await waiter.throwingIdentifiableContinuation {
+                $0.resume(with: .success("Fish"))
+            }
+        }
+
+        let result = await task.result
+        XCTAssertEqual(try result.get(), "Fish")
     }
 
     func testThrowingCancels_After_Created() async {
-        let waiter = Waiter<String, any Error>()
+        let waiter = Waiter<String?, any Error>()
 
-        let task = Task<String?, any Error> {
-            try await withThrowingIdentifiableContinuation {
-                waiter.addContinuation($0)
-            } onCancel: {
-                waiter.resumeID($0, throwing: CancellationError())
-            }
-        }
-
+        let task = await waiter.makeTask(onCancel: .failure(CancellationError()))
         await Task.sleep(seconds: 0.1)
-        XCTAssertFalse(waiter.isEmpty)
+        var isEmpty = await waiter.isEmpty
+        XCTAssertFalse(isEmpty)
         task.cancel()
 
-        let val = await task.result
-        XCTAssertThrowsError(try val.get())
+        let result = await task.result
+        XCTAssertThrowsError(try result.get())
+
+        isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
     }
 
     func testThrowingCancels_Before_Created() async {
-        let waiter = Waiter<String, any Error>()
+        let waiter = Waiter<String?, any Error>()
 
-        let task = Task<String?, any Error> {
-            await Task.sleep(seconds: 0.1)
-            return try await withThrowingIdentifiableContinuation {
-                waiter.addContinuation($0)
-            } onCancel: {
-                waiter.resumeID($0, throwing: CancellationError())
-            }
-        }
-
-        XCTAssertTrue(waiter.isEmpty)
-        task.cancel()
-
-        let val = await task.result
-        XCTAssertThrowsError(try val.get())
-    }
-
-    func testUnsafeResumesWithValue() async {
-        let val = await withIdentifiableUnsafeContinuation {
-            $0.resume(returning: "Fish")
-        }
-        XCTAssertEqual(val, "Fish")
-    }
-
-    func testUnsafeResumesWithResult() async {
-        let val = await withIdentifiableUnsafeContinuation {
-            $0.resume(with: .success("Chips"))
-        }
-        XCTAssertEqual(val, "Chips")
-    }
-
-    func testUnsafeCancels_After_Created() async {
-        let waiter = Waiter<String?, Never>()
-
-        let task = Task<String?, Never> {
-            await withIdentifiableUnsafeContinuation {
-                waiter.addContinuation($0)
-            } onCancel: {
-                waiter.resumeID($0, returning: nil)
-            }
-        }
-
+        let task = await waiter.makeTask(delay: 1.0, onCancel: .failure(CancellationError()))
         await Task.sleep(seconds: 0.1)
-        XCTAssertFalse(waiter.isEmpty)
+        let isEmpty = await waiter.isEmpty
+        XCTAssertTrue(isEmpty)
         task.cancel()
 
-        let val = await task.value
-        XCTAssertNil(val)
-    }
-
-    func testUnsafeCancels_Before_Created() async {
-        let waiter = Waiter<String?, Never>()
-
-        let task = Task<String?, Never> {
-            await Task.sleep(seconds: 0.1)
-            return await withIdentifiableUnsafeContinuation {
-                waiter.addContinuation($0)
-            } onCancel: {
-                waiter.resumeID($0, returning: nil)
-            }
-        }
-
-        XCTAssertTrue(waiter.isEmpty)
-        task.cancel()
-
-        let val = await task.value
-        XCTAssertNil(val)
-    }
-
-    func testUnsafeThrowingResumesWithError() async {
-        do {
-            let _: Int = try await withThrowingIdentifiableUnsafeContinuation {
-                $0.resume(throwing: CancellationError())
-            }
-            XCTFail("Expected error")
-        } catch {
-            XCTAssertTrue(error is CancellationError)
-        }
-    }
-
-
-    func testUnsafeThrowingCancels_After_Created() async {
-        let waiter = Waiter<String, any Error>()
-
-        let task = Task<String?, any Error> {
-            try await withThrowingIdentifiableUnsafeContinuation {
-                waiter.addContinuation($0)
-            } onCancel: {
-                waiter.resumeID($0, throwing: CancellationError())
-            }
-        }
-
-        await Task.sleep(seconds: 0.1)
-        XCTAssertFalse(waiter.isEmpty)
-        task.cancel()
-
-        let val = await task.result
-        XCTAssertThrowsError(try val.get())
-    }
-
-    func testUnsafeThrowingCancels_Before_Created() async {
-        let waiter = Waiter<String, any Error>()
-
-        let task = Task<String?, any Error> {
-            await Task.sleep(seconds: 0.1)
-            return try await withThrowingIdentifiableUnsafeContinuation {
-                waiter.addContinuation($0)
-            } onCancel: {
-                waiter.resumeID($0, throwing: CancellationError())
-            }
-        }
-
-        XCTAssertTrue(waiter.isEmpty)
-        task.cancel()
-
-        let val = await task.result
-        XCTAssertThrowsError(try val.get())
+        let result = await task.result
+        XCTAssertThrowsError(try result.get())
     }
 }
 
-private final class Waiter<T, E: Error>: @unchecked Sendable {
+private actor Waiter<T, E: Error> {
     typealias Continuation = IdentifiableContinuation<T, E>
 
     private var waiting = [Continuation.ID: Continuation]()
-    private let lock = NSLock()
 
     var isEmpty: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return waiting.isEmpty
+        waiting.isEmpty
     }
 
-    func addContinuation(_ continuation: Continuation) {
-        lock.lock()
+    func makeTask(delay: TimeInterval = 0, onCancel: T) -> Task<T, Never> where E == Never {
+        Task {
+            await Task.sleep(seconds: delay)
+            return await withIdentifiableContinuation(isolation: self) {
+                addContinuation($0)
+            } onCancel: { id in
+                Task { await self.resumeID(id, returning: onCancel) }
+            }
+        }
+    }
+
+    func makeTask(delay: TimeInterval = 0, onCancel: Result<T, E>) -> Task<T, any Error> where E == any Error {
+        Task {
+            await Task.sleep(seconds: delay)
+            return try await withThrowingIdentifiableContinuation(isolation: self) {
+                addContinuation($0)
+            } onCancel: { id in
+                Task { await self.resumeID(id, with: onCancel) }
+            }
+        }
+    }
+
+    private func addContinuation(_ continuation: Continuation) {
+        safeAssertIsolated()
         waiting[continuation.id] = continuation
-        lock.unlock()
     }
 
-    func resumeID(_ id: Continuation.ID, returning value: T) {
-        lock.lock()
-        waiting[id]!.resume(returning: value)
-        lock.unlock()
+    private func resumeID(_ id: Continuation.ID, returning value: T) {
+        safeAssertIsolated()
+        if let continuation = waiting.removeValue(forKey: id) {
+            continuation.resume(returning: value)
+        }
     }
 
-    func resumeID(_ id: Continuation.ID, throwing error: E) {
-        lock.lock()
-        waiting[id]!.resume(throwing: error)
-        lock.unlock()
+    private func resumeID(_ id: Continuation.ID, throwing error: E) {
+        safeAssertIsolated()
+        if let continuation = waiting.removeValue(forKey: id) {
+            continuation.resume(throwing: error)
+        }
+    }
+
+    private func resumeID(_ id: Continuation.ID, with result: Result<T, E>) {
+        safeAssertIsolated()
+        if let continuation = waiting.removeValue(forKey: id) {
+            continuation.resume(with: result)
+        }
+    }
+
+    private func safeAssertIsolated() {
+#if compiler(>=5.10)
+        assertIsolated()
+#elseif compiler(>=5.9)
+        if #available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *) {
+            assertIsolated()
+        }
+#endif
     }
 }
 
 private extension Task where Success == Never, Failure == Never {
     static func sleep(seconds: TimeInterval) async {
         try? await sleep(nanoseconds: UInt64(1_000_000_000 * seconds))
+    }
+}
+
+private extension Actor {
+
+    func identifiableContinuation<T: Sendable>(
+        body:  @Sendable (IdentifiableContinuation<T, Never>) -> Void,
+    onCancel handler: @Sendable (IdentifiableContinuation<T, Never>.ID) -> Void = { _ in }
+    ) async -> T {
+        await withIdentifiableContinuation(isolation: self, body: body, onCancel: handler)
+    }
+
+    func throwingIdentifiableContinuation<T: Sendable>(
+        body:  @Sendable (IdentifiableContinuation<T, any Error>) -> Void,
+    onCancel handler: @Sendable (IdentifiableContinuation<T, any Error>.ID) -> Void = { _ in }
+    ) async throws -> T {
+        try await withThrowingIdentifiableContinuation(isolation: self, body: body, onCancel: handler)
     }
 }
