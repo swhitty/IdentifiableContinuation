@@ -7,7 +7,7 @@
 
 # Introduction
 
-**IdentifiableContinuation** is a lightweight wrapper around [`CheckedContinuation`](https://developer.apple.com/documentation/swift/checkedcontinuation) and [`UnsafeContinuation`](https://developer.apple.com/documentation/swift/unsafecontinuation) that conforms to [`Identifiable`](https://developer.apple.com/documentation/swift/identifiable) and includes an easy to use cancellation handler with the id.
+**IdentifiableContinuation** is a lightweight wrapper around [`CheckedContinuation`](https://developer.apple.com/documentation/swift/checkedcontinuation) that conforms to [`Identifiable`](https://developer.apple.com/documentation/swift/identifiable) and includes an easy to use cancellation handler with the id.
 
 # Installation
 
@@ -17,57 +17,28 @@ IdentifiableContinuation can be installed by using Swift Package Manager.
 To install using Swift Package Manager, add this to the `dependencies:` section in your Package.swift file:
 
 ```swift
-.package(url: "https://github.com/swhitty/IdentifiableContinuation.git", .upToNextMajor(from: "0.0.1"))
+.package(url: "https://github.com/swhitty/IdentifiableContinuation.git", .upToNextMajor(from: "0.1.0"))
 ```
 
 # Usage
 
-Usage is similar to existing continuations:
+Usage is similar to existing continuations, but requires an `Actor` to ensure the closure is executed within the actors isolation:
 
 ```swift
-let val: String = await withIdentifiableContinuation { 
+let val: String = await withIdentifiableContinuation(isolation: self) { 
     $0.resume(returning: "bar")
 }
 ```
 
-The continuation includes an `id` that can be attached to an asynchronous task enabling the `onCancel` handler to cancel it.  
+This allows actors to start continuations and synchronously mutate their isolated state _before_ suspension occurs. The `onCancel:` handler is `@Sendable` and can be called at any time _after_ the body has completed. Manually check `Task.isCancelled` before creating the continuation to prevent performing unrequired work.
 
 ```swift
-let val: String? = await withIdentifiableContinuation { continuation in
-  foo.startTask(for: continuation.id) { result
-     continuation.resume(returning: result)
-  }
+let val: String = await withIdentifiableContinuation(isolation: self) {
+  continuations[$0.id] = $0
 } onCancel: { id in
-  foo.cancelTask(for: id)
+  Task { self.cancelContinuation(with: id) }
 }
 ```
-
-`async` closures can be used making it easy to store the continuations within an actor:
-
-```swift
-let val: String? = await withIdentifiableContinuation {
-  await someActor.insertContinuation($0)
-} onCancel: {
-  await someActor.cancelContinuation(for: $0)
-}
-```
-
-> Note: The `onCancel:` handler is guaranteed to be called after the continuation body even if the task is already cancelled. Manually check `Task.isCancelled` before creating the continuation to prevent performing unrequired work.
-
-## Checked/UnsafeContinuation
-
-`IdentifiableContinuation` internally stores either a checked or unsafe continuation.
-
-[`CheckedContinuation`](https://developer.apple.com/documentation/swift/checkedcontinuation) is used by the default methods:
-
-- `withIdentifiableContinuation`
-- `withThrowingIdentifiableContinuation`
-
-
-[`UnsafeContinuation`](https://developer.apple.com/documentation/swift/unsafecontinuation) is used by the unsafe methods:
-
-- `withIdentifiableUnsafeContinuation`
-- `withThrowingIdentifiableUnsafeContinuation`
 
 # Credits
 
