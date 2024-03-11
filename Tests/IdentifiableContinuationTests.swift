@@ -177,7 +177,7 @@ private actor Waiter<T, E: Error> {
     func makeTask(delay: TimeInterval = 0, onCancel: Result<T, E>) -> Task<T, any Error> where E == any Error {
         Task {
             await Task.sleep(seconds: delay)
-            return try await withThrowingIdentifiableContinuation(isolation: self) {
+            return try await withIdentifiableThrowingContinuation(isolation: self) {
                 addContinuation($0)
             } onCancel: { id in
                 Task { await self.resumeID(id, with: onCancel) }
@@ -241,6 +241,6 @@ private extension Actor {
         body:  @Sendable (IdentifiableContinuation<T, any Error>) -> Void,
     onCancel handler: @Sendable (IdentifiableContinuation<T, any Error>.ID) -> Void = { _ in }
     ) async throws -> T {
-        try await withThrowingIdentifiableContinuation(isolation: self, body: body, onCancel: handler)
+        try await withIdentifiableThrowingContinuation(isolation: self, body: body, onCancel: handler)
     }
 }

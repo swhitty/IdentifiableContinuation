@@ -86,7 +86,7 @@ public func withIdentifiableContinuation<T>(
 ///   - handler: Cancellation closure executed when the current Task is cancelled.  Handler is always called _after_ the body closure is compeled.
 /// - Returns: The value continuation is resumed with.
 @_unsafeInheritExecutor
-public func withThrowingIdentifiableContinuation<T>(
+public func withIdentifiableThrowingContinuation<T>(
   isolation: isolated some Actor,
   body: (IdentifiableContinuation<T, any Error>) -> Void,
   onCancel handler: @Sendable (IdentifiableContinuation<T, any Error>.ID) -> Void
