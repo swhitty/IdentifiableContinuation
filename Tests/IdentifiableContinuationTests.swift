@@ -43,6 +43,13 @@ final class IdentifiableContinuationAsyncTests: XCTestCase {
         XCTAssertEqual(val, "Fish")
     }
 
+    func testResumesWithVoid() async {
+        let waiter = Waiter<Void, Never>()
+        await waiter.identifiableContinuation {
+            $0.resume()
+        }
+    }
+
     func testResumesWithResult() async {
         let waiter = Waiter<String?, Never>()
         let val = await waiter.identifiableContinuation {
