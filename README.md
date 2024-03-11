@@ -30,7 +30,7 @@ let val: String = await withIdentifiableContinuation(isolation: self) {
 }
 ```
 
-This allows actors to start continuations and synchronously mutate their isolated state _before_ suspension occurs. The `onCancel:` handler is `@Sendable` and can be called at any time _after_ the body has completed. Manually check `Task.isCancelled` before creating the continuation to prevent performing unrequired work.
+This allows actors to synchronously start continuations and mutate their isolated state _before_ suspension occurs. The `onCancel:` handler is `@Sendable` and can be called at any time _after_ the body has completed. Manually check `Task.isCancelled` before creating the continuation to prevent performing unrequired work.
 
 ```swift
 let val: String = await withIdentifiableContinuation(isolation: self) {
