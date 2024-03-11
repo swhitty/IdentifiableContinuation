@@ -36,7 +36,7 @@ This allows actors to synchronously start continuations and mutate their isolate
 let val: String = await withIdentifiableContinuation(isolation: self) {
   continuations[$0.id] = $0
 } onCancel: { id in
-  Task { self.cancelContinuation(with: id) }
+  Task { await self.cancelContinuation(with: id) }
 }
 ```
 
