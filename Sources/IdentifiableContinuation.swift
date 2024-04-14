@@ -44,13 +44,14 @@
 @_unsafeInheritExecutor
 public func withIdentifiableContinuation<T>(
   isolation: isolated some Actor,
+  function: String = #function,
   body: (IdentifiableContinuation<T, Never>) -> Void,
   onCancel handler: @Sendable (IdentifiableContinuation<T, Never>.ID) -> Void
 ) async -> T {
     let id = IdentifiableContinuation<T, Never>.ID()
     let state = AllocatedLock(initialState: (isStarted: false, isCancelled: false))
     return await withTaskCancellationHandler {
-        await withCheckedContinuation {
+        await withCheckedContinuation(function: function) {
             let continuation = IdentifiableContinuation(id: id, continuation: $0)
             body(continuation)
             let sendCancel = state.withLock {
@@ -88,13 +89,14 @@ public func withIdentifiableContinuation<T>(
 @_unsafeInheritExecutor
 public func withIdentifiableThrowingContinuation<T>(
   isolation: isolated some Actor,
+  function: String = #function,
   body: (IdentifiableContinuation<T, any Error>) -> Void,
   onCancel handler: @Sendable (IdentifiableContinuation<T, any Error>.ID) -> Void
 ) async throws -> T {
     let id = IdentifiableContinuation<T, any Error>.ID()
     let state = AllocatedLock(initialState: (isStarted: false, isCancelled: false))
     return try await withTaskCancellationHandler {
-        try await withCheckedThrowingContinuation {
+        try await withCheckedThrowingContinuation(function: function) {
             let continuation = IdentifiableContinuation(id: id, continuation: $0)
             body(continuation)
             let sendCancel = state.withLock {
@@ -123,7 +125,6 @@ public struct IdentifiableContinuation<T, E>: Sendable, Identifiable where E: Er
 
     public final class ID: Hashable, Sendable {
 
-        @usableFromInline
         init() { }
 
         public func hash(into hasher: inout Hasher) {
@@ -135,7 +136,6 @@ public struct IdentifiableContinuation<T, E>: Sendable, Identifiable where E: Er
         }
     }
 
-    @usableFromInline
     init(id: ID, continuation: CheckedContinuation<T, E>) {
         self.id = id
         self.continuation = continuation
