@@ -1,7 +1,7 @@
 [![Build](https://github.com/swhitty/IdentifiableContinuation/actions/workflows/build.yml/badge.svg)](https://github.com/swhitty/IdentifiableContinuation/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/swhitty/IdentifiableContinuation/graphs/badge.svg)](https://codecov.io/gh/swhitty/IdentifiableContinuation)
 [![Platforms](https://img.shields.io/badge/platforms-iOS%20|%20Mac%20|%20tvOS%20|%20Linux%20|%20Windows-lightgray.svg)](https://github.com/swhitty/IdentifiableContinuation/blob/main/Package.swift)
-[![Swift 5.10](https://img.shields.io/badge/swift-5.7%20–%205.10-red.svg?style=flat)](https://developer.apple.com/swift)
+[![Swift 6.0](https://img.shields.io/badge/swift-5.10%20–%206.0-red.svg?style=flat)](https://developer.apple.com/swift)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://opensource.org/licenses/MIT)
 [![Twitter](https://img.shields.io/badge/twitter-@simonwhitty-blue.svg)](http://twitter.com/simonwhitty)
 
@@ -22,23 +22,32 @@ To install using Swift Package Manager, add this to the `dependencies:` section 
 
 # Usage
 
-Usage is similar to existing continuations, but requires an `Actor` to ensure the closure is executed within the actors isolation:
+With Swift 6, usage is similar to existing continuations where the closure is executed syncronously within the current isolation allowing actors to mutate their isolated state.
 
 ```swift
-let val: String = await withIdentifiableContinuation(isolation: self) { 
-    $0.resume(returning: "bar")
+let val: String = await withIdentifiableContinuation { 
+  continuations[$0.id] = $0
 }
 ```
 
-This allows actors to synchronously start continuations and mutate their isolated state _before_ suspension occurs. The `onCancel:` handler is `@Sendable` and can be called at any time _after_ the body has completed. Manually check `Task.isCancelled` before creating the continuation to prevent performing unrequired work.
+An optional cancellation handler is called when the task is cancelled.  The handler is `@Sendable` and can be called at any time _after_ the body has completed.
 
 ```swift
-let val: String = await withIdentifiableContinuation(isolation: self) {
-  // executed within actor isolation so can immediately mutate actor state
+let val: String = await withIdentifiableContinuation { 
   continuations[$0.id] = $0
-} onCancel: { id in
+} onCancel { id in
   // @Sendable closure executed outside of actor isolation requires `await` to mutate actor state
   Task { await self.cancelContinuation(with: id) }
+}
+```
+
+## Swift 5
+
+ While behaviour is identical, Swift 5 is unable to automatically inherit actor isolation through the new `#isolation` keyword ([SE-420](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0420-inheritance-of-actor-isolation.md)) so an `isolated` reference to the current actor must always be passed.
+
+```swift
+let val: String = await withIdentifiableContinuation(isolation: self) { 
+  continuations[$0.id] = $0
 }
 ```
 

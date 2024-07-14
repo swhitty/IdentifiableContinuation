@@ -154,7 +154,7 @@ final class IdentifiableContinuationAsyncTests: XCTestCase {
     }
 }
 
-private actor Waiter<T, E: Error> {
+private actor Waiter<T: Sendable, E: Error> {
     typealias Continuation = IdentifiableContinuation<T, E>
 
     private var waiting = [Continuation.ID: Continuation]()
@@ -166,22 +166,38 @@ private actor Waiter<T, E: Error> {
     func makeTask(delay: TimeInterval = 0, onCancel: T) -> Task<T, Never> where E == Never {
         Task {
             await Task.sleep(seconds: delay)
+#if compiler(>=6.0)
+            return await withIdentifiableContinuation {
+                addContinuation($0)
+            } onCancel: { id in
+                Task { await self.resumeID(id, returning: onCancel) }
+            }
+#else
             return await withIdentifiableContinuation(isolation: self) {
                 addContinuation($0)
             } onCancel: { id in
                 Task { await self.resumeID(id, returning: onCancel) }
             }
+#endif
         }
     }
 
     func makeTask(delay: TimeInterval = 0, onCancel: Result<T, E>) -> Task<T, any Error> where E == any Error {
         Task {
             await Task.sleep(seconds: delay)
+#if compiler(>=6.0)
+            return try await withIdentifiableThrowingContinuation {
+                addContinuation($0)
+            } onCancel: { id in
+                Task { await self.resumeID(id, with: onCancel) }
+            }
+#else
             return try await withIdentifiableThrowingContinuation(isolation: self) {
                 addContinuation($0)
             } onCancel: { id in
                 Task { await self.resumeID(id, with: onCancel) }
             }
+#endif
         }
     }
 
@@ -234,13 +250,22 @@ private extension Actor {
         body:  @Sendable (IdentifiableContinuation<T, Never>) -> Void,
     onCancel handler: @Sendable (IdentifiableContinuation<T, Never>.ID) -> Void = { _ in }
     ) async -> T {
+#if compiler(>=6.0)
+        await withIdentifiableContinuation(body: body, onCancel: handler)
+#else
         await withIdentifiableContinuation(isolation: self, body: body, onCancel: handler)
+#endif
     }
 
     func throwingIdentifiableContinuation<T: Sendable>(
         body:  @Sendable (IdentifiableContinuation<T, any Error>) -> Void,
     onCancel handler: @Sendable (IdentifiableContinuation<T, any Error>.ID) -> Void = { _ in }
     ) async throws -> T {
+#if compiler(>=6.0)
+        try await withIdentifiableThrowingContinuation(body: body, onCancel: handler)
+#else
         try await withIdentifiableThrowingContinuation(isolation: self, body: body, onCancel: handler)
+#endif
+
     }
 }
