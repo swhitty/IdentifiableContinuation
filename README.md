@@ -22,13 +22,15 @@ To install using Swift Package Manager, add this to the `dependencies:` section 
 
 # Usage
 
-With Swift 6, usage is similar to existing continuations where the closure is executed syncronously within the current isolation allowing actors to mutate their isolated state.
+With Swift 6, usage is similar to existing continuations.
 
 ```swift
 let val: String = await withIdentifiableContinuation { 
   continuations[$0.id] = $0
 }
 ```
+
+The body closure is executed syncronously within the current isolation allowing actors to mutate their isolated state.
 
 An optional cancellation handler is called when the task is cancelled.  The handler is `@Sendable` and can be called at any time _after_ the body has completed.
 
@@ -43,7 +45,7 @@ let val: String = await withIdentifiableContinuation {
 
 ## Swift 5
 
- While behaviour is identical, Swift 5 is unable to automatically inherit actor isolation through the new `#isolation` keyword ([SE-420](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0420-inheritance-of-actor-isolation.md)) so an `isolated` reference to the current actor must always be passed.
+ While behaviour is identical, Swift 5 is unable to inherit actor isolation through the new `#isolation` keyword ([SE-420](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0420-inheritance-of-actor-isolation.md)) so an `isolated` reference to the current actor must always be passed.
 
 ```swift
 let val: String = await withIdentifiableContinuation(isolation: self) { 
