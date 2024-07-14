@@ -13,11 +13,11 @@
 
 IdentifiableContinuation can be installed by using Swift Package Manager.
 
- **Note:** IdentifiableContinuation requires Swift 5.7 on Xcode 14+. It runs on iOS 13+, tvOS 13+, macOS 10.15+, Linux and Windows.
+ **Note:** IdentifiableContinuation requires Swift 5.10 on Xcode 15.4+. It runs on iOS 13+, tvOS 13+, macOS 10.15+, Linux and Windows.
 To install using Swift Package Manager, add this to the `dependencies:` section in your Package.swift file:
 
 ```swift
-.package(url: "https://github.com/swhitty/IdentifiableContinuation.git", .upToNextMajor(from: "0.1.0"))
+.package(url: "https://github.com/swhitty/IdentifiableContinuation.git", .upToNextMajor(from: "0.2.0"))
 ```
 
 # Usage
