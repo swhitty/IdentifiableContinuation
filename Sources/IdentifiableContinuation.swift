@@ -53,7 +53,7 @@ public func withIdentifiableContinuation<T>(
     let id = IdentifiableContinuation<T, Never>.ID()
     let state = AllocatedLock(initialState: (isStarted: false, isCancelled: false))
     return await withTaskCancellationHandler {
-        await withCheckedContinuation(function: function) {
+        await withCheckedContinuation(isolation: isolation, function: function) {
             let continuation = IdentifiableContinuation(id: id, continuation: $0)
             body(continuation)
             let sendCancel = state.withLock {
@@ -63,7 +63,6 @@ public func withIdentifiableContinuation<T>(
             if sendCancel {
                 handler(id)
             }
-            _ = isolation
         }
     } onCancel: {
         let sendCancel = state.withLock {
@@ -99,7 +98,7 @@ public func withIdentifiableThrowingContinuation<T>(
     let id = IdentifiableContinuation<T, any Error>.ID()
     let state = AllocatedLock(initialState: (isStarted: false, isCancelled: false))
     return try await withTaskCancellationHandler {
-        try await withCheckedThrowingContinuation(function: function) {
+        try await withCheckedThrowingContinuation(isolation: isolation, function: function) {
             let continuation = IdentifiableContinuation(id: id, continuation: $0)
             body(continuation)
             let sendCancel = state.withLock {
@@ -109,7 +108,6 @@ public func withIdentifiableThrowingContinuation<T>(
             if sendCancel {
                 handler(id)
             }
-            _ = isolation
         }
     } onCancel: {
         let sendCancel = state.withLock {
