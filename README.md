@@ -43,7 +43,7 @@ let val: String = await withIdentifiableContinuation {
 }
 ```
 
-> The above work with Swift 5 language mode using a compatible Swift 6 compiler e.g. Xcode 16
+> The above also works in Swift 5 language mode using a compatible Swift 6 compiler e.g. Xcode 16
 
 ## Swift 5
 
