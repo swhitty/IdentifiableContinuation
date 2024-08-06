@@ -43,6 +43,8 @@ let val: String = await withIdentifiableContinuation {
 }
 ```
 
+> The above work with Swift 5 language mode using a compatible Swift 6 compiler e.g. Xcode 16
+
 ## Swift 5
 
  While behaviour is identical, Swift 5 is unable to inherit actor isolation through the new `#isolation` keyword ([SE-420](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0420-inheritance-of-actor-isolation.md)) so an `isolated` reference to the current actor must always be passed.
