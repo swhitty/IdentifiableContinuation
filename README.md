@@ -37,7 +37,7 @@ An optional cancellation handler is called when the task is cancelled.  The hand
 ```swift
 let val: String = await withIdentifiableContinuation { 
   continuations[$0.id] = $0
-} onCancel { id in
+} onCancel: { id in
   // @Sendable closure executed outside of actor isolation requires `await` to mutate actor state
   Task { await self.cancelContinuation(with: id) }
 }
