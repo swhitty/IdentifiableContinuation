@@ -112,7 +112,7 @@ extension AllocatedLock {
 
 #elseif canImport(Glibc)
 
-@_implementationOnly import Glibc
+import Glibc
 
 extension AllocatedLock {
     @usableFromInline
@@ -153,8 +153,8 @@ extension AllocatedLock {
 
 #elseif canImport(WinSDK)
 
-@_implementationOnly import ucrt
-@_implementationOnly import WinSDK
+import ucrt
+import WinSDK
 
 extension AllocatedLock {
     @usableFromInline
