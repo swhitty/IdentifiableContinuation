@@ -47,7 +47,7 @@ let val: String = await withIdentifiableContinuation {
 
 ## Swift 5
 
- While behaviour is identical, Swift 5 conpilers (Xcode 15) are unable to inherit actor isolation through the new `#isolation` keyword ([SE-420](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0420-inheritance-of-actor-isolation.md)) so an `isolated` reference to the current actor must always be passed.
+ While behaviour is identical, Swift 5 compilers (Xcode 15) are unable to inherit actor isolation through the new `#isolation` keyword ([SE-420](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0420-inheritance-of-actor-isolation.md)) so an `isolated` reference to the current actor must always be passed.
 
 ```swift
 let val: String = await withIdentifiableContinuation(isolation: self) { 
