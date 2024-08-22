@@ -33,7 +33,7 @@ extension Array where Element == SwiftSetting {
     static var upcomingFeatures: [SwiftSetting] {
         [
             .enableUpcomingFeature("ExistentialAny"),
-            .swiftLanguageMode(.v5)
+            .swiftLanguageMode(.v6)
         ]
     }
 }
