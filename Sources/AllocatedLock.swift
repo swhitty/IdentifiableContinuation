@@ -31,11 +31,13 @@
 
 // Backports the Swift interface around os_unfair_lock_t available in recent Darwin platforms
 //
+@usableFromInline
 struct AllocatedLock<State>: @unchecked Sendable {
 
     @usableFromInline
     let storage: Storage
 
+    @usableFromInline
     init(initialState: State) {
         self.storage = Storage(initialState: initialState)
     }

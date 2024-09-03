@@ -44,6 +44,7 @@
 ///   - body: A closure that takes a `IdentifiableContinuation` parameter.
 ///   - handler: Cancellation closure executed when the current Task is cancelled.  Handler is always called _after_ the body closure is compeled.
 /// - Returns: The value continuation is resumed with.
+@inlinable
 public func withIdentifiableContinuation<T>(
   isolation: isolated (any Actor)? = #isolation,
   function: String = #function,
@@ -90,6 +91,7 @@ public func withIdentifiableContinuation<T>(
 ///   - body: A closure that takes a `IdentifiableContinuation` parameter.
 ///   - handler: Cancellation closure executed when the current Task is cancelled.  Handler is always called _after_ the body closure is compeled.
 /// - Returns: The value continuation is resumed with.
+@inlinable
 public func withIdentifiableThrowingContinuation<T>(
   isolation: isolated (any Actor)? = #isolation,
   function: String = #function,
@@ -138,6 +140,7 @@ public func withIdentifiableThrowingContinuation<T>(
 ///   - handler: Cancellation closure executed when the current Task is cancelled.  Handler is always called _after_ the body closure is compeled.
 /// - Returns: The value continuation is resumed with.
 @_unsafeInheritExecutor
+@inlinable
 public func withIdentifiableContinuation<T>(
   isolation: isolated some Actor,
   function: String = #function,
@@ -186,6 +189,7 @@ public func withIdentifiableContinuation<T>(
 ///   - handler: Cancellation closure executed when the current Task is cancelled.  Handler is always called _after_ the body closure is compeled.
 /// - Returns: The value continuation is resumed with.
 @_unsafeInheritExecutor
+@inlinable
 public func withIdentifiableThrowingContinuation<T>(
   isolation: isolated some Actor,
   function: String = #function,
@@ -225,6 +229,7 @@ public struct IdentifiableContinuation<T, E>: Sendable, Identifiable where E: Er
 
     public final class ID: Hashable, Sendable {
 
+        @usableFromInline
         init() { }
 
         public func hash(into hasher: inout Hasher) {
@@ -236,6 +241,7 @@ public struct IdentifiableContinuation<T, E>: Sendable, Identifiable where E: Er
         }
     }
 
+    @usableFromInline
     init(id: ID, continuation: CheckedContinuation<T, E>) {
         self.id = id
         self.continuation = continuation
