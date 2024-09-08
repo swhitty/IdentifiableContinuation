@@ -52,7 +52,7 @@ public func withIdentifiableContinuation<T>(
   onCancel handler: @Sendable (IdentifiableContinuation<T, Never>.ID) -> Void
 ) async -> T {
     let id = IdentifiableContinuation<T, Never>.ID()
-    let state = AllocatedLock(initialState: (isStarted: false, isCancelled: false))
+    let state = Mutex((isStarted: false, isCancelled: false))
     nonisolated(unsafe) let body = body
     return await withTaskCancellationHandler {
         await withCheckedContinuation(isolation: isolation, function: function) {
@@ -99,7 +99,7 @@ public func withIdentifiableThrowingContinuation<T>(
   onCancel handler: @Sendable (IdentifiableContinuation<T, any Error>.ID) -> Void
 ) async throws -> T {
     let id = IdentifiableContinuation<T, any Error>.ID()
-    let state = AllocatedLock(initialState: (isStarted: false, isCancelled: false))
+    let state = Mutex((isStarted: false, isCancelled: false))
     nonisolated(unsafe) let body = body
     return try await withTaskCancellationHandler {
         try await withCheckedThrowingContinuation(isolation: isolation, function: function) {
@@ -148,7 +148,7 @@ public func withIdentifiableContinuation<T>(
   onCancel handler: @Sendable (IdentifiableContinuation<T, Never>.ID) -> Void
 ) async -> T {
     let id = IdentifiableContinuation<T, Never>.ID()
-    let state = AllocatedLock(initialState: (isStarted: false, isCancelled: false))
+    let state = Mutex((isStarted: false, isCancelled: false))
     return await withTaskCancellationHandler {
         await withCheckedContinuation(function: function) {
             let continuation = IdentifiableContinuation(id: id, continuation: $0)
@@ -197,7 +197,7 @@ public func withIdentifiableThrowingContinuation<T>(
   onCancel handler: @Sendable (IdentifiableContinuation<T, any Error>.ID) -> Void
 ) async throws -> T {
     let id = IdentifiableContinuation<T, any Error>.ID()
-    let state = AllocatedLock(initialState: (isStarted: false, isCancelled: false))
+    let state = Mutex((isStarted: false, isCancelled: false))
     return try await withTaskCancellationHandler {
         try await withCheckedThrowingContinuation(function: function) {
             let continuation = IdentifiableContinuation(id: id, continuation: $0)
