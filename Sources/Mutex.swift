@@ -2,8 +2,8 @@
 //  Mutex.swift
 //  swift-mutex
 //
-//  Created by Simon Whitty on 10/04/2023.
-//  Copyright 2023 Simon Whitty
+//  Created by Simon Whitty on 07/09/2024.
+//  Copyright 2024 Simon Whitty
 //
 //  Distributed under the permissive MIT license
 //  Get the latest version from here:
