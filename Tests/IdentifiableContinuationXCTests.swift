@@ -33,7 +33,7 @@
 import IdentifiableContinuation
 import XCTest
 
-final class IdentifiableContinuationAsyncXCTests: XCTestCase {
+final class IdentifiableContinuationXCTests: XCTestCase {
 
     func testResumesWithValue() async {
         let waiter = Waiter<String?, Never>()
