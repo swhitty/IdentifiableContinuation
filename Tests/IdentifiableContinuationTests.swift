@@ -86,7 +86,6 @@ struct IdentifiableContinuationTests {
         let waiter = Waiter<String?, Never>()
 
         let task = await waiter.makeTask(delay: 1.0, onCancel: nil)
-        try? await Task.sleep(seconds: 0.1)
         let isEmpty = await waiter.isEmpty
         #expect(isEmpty)
         task.cancel()
@@ -160,7 +159,6 @@ struct IdentifiableContinuationTests {
         let waiter = Waiter<String?, any Error>()
 
         let task = await waiter.makeTask(delay: 1.0, onCancel: .failure(CancellationError()))
-        try? await Task.sleep(seconds: 0.1)
         let isEmpty = await waiter.isEmpty
         #expect(isEmpty)
         task.cancel()
@@ -181,42 +179,58 @@ private actor Waiter<T: Sendable, E: Error> {
         waiting.isEmpty
     }
 
-    func makeTask(delay: TimeInterval = 0, onCancel: T) -> Task<T, Never> where E == Never {
+    func makeTask(delay: TimeInterval, onCancel: T) -> Task<T, Never> where E == Never {
         Task {
             try? await Task.sleep(seconds: delay)
-#if compiler(>=6.0)
             return await withIdentifiableContinuation {
                 addContinuation($0)
             } onCancel: { id in
                 Task { await self.resumeID(id, returning: onCancel) }
             }
-#else
-            return await withIdentifiableContinuation(isolation: self) {
-                addContinuation($0)
-            } onCancel: { id in
-                Task { await self.resumeID(id, returning: onCancel) }
-            }
-#endif
         }
     }
 
-    func makeTask(delay: TimeInterval = 0, onCancel: Result<T, E>) -> Task<T, any Error> where E == any Error {
+    func makeTask(onCancel: T) async -> Task<T, Never> where E == Never {
+        nonisolated(unsafe) var continuation: CheckedContinuation<Void, Never>!
+        let task = Task {
+            return await withIdentifiableContinuation {
+                addContinuation($0)
+                continuation.resume()
+            } onCancel: { id in
+                Task { await self.resumeID(id, returning: onCancel) }
+            }
+        }
+        await withCheckedContinuation {
+            continuation = $0
+        }
+        return task
+    }
+
+    func makeTask(delay: TimeInterval, onCancel: Result<T, E>) -> Task<T, any Error> where E == any Error {
         Task {
             try? await Task.sleep(seconds: delay)
-#if compiler(>=6.0)
             return try await withIdentifiableThrowingContinuation {
                 addContinuation($0)
             } onCancel: { id in
                 Task { await self.resumeID(id, with: onCancel) }
             }
-#else
-            return try await withIdentifiableThrowingContinuation(isolation: self) {
+        }
+    }
+
+    func makeTask(onCancel: Result<T, E>) async -> Task<T, any Error> where E == any Error {
+        nonisolated(unsafe) var continuation: CheckedContinuation<Void, Never>!
+        let task = Task {
+            try await withIdentifiableThrowingContinuation {
                 addContinuation($0)
+                continuation.resume()
             } onCancel: { id in
                 Task { await self.resumeID(id, with: onCancel) }
             }
-#endif
         }
+        await withCheckedContinuation {
+            continuation = $0
+        }
+        return task
     }
 
     private func addContinuation(_ continuation: Continuation) {
