@@ -202,7 +202,7 @@ extension Mutex {
         }
 
         func tryLock() -> Bool {
-            TryAcquireSRWLockExclusive(_lock)
+            TryAcquireSRWLockExclusive(_lock) != 0
         }
     }
 }
