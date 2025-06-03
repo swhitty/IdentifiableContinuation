@@ -1,5 +1,5 @@
 //
-//  MutexTests.swift
+//  MutexXCTests.swift
 //  swift-mutex
 //
 //  Created by Simon Whitty on 07/09/2024.
@@ -29,6 +29,7 @@
 //  SOFTWARE.
 //
 
+#if !canImport(Testing)
 @testable import IdentifiableContinuation
 import XCTest
 
@@ -51,11 +52,11 @@ final class MutexXCTests: XCTestCase {
 
     func testLockIfAvailable_ReturnsValue() {
         let mutex = Mutex("fish")
-        mutex.storage.lock()
+        mutex.unsafeLock()
         XCTAssertNil(
             mutex.withLockIfAvailable { _ in "chips" }
         )
-        mutex.storage.unlock()
+        mutex.unsafeUnlock()
         XCTAssertEqual(
             mutex.withLockIfAvailable { _ in "chips" },
             "chips"
@@ -69,3 +70,9 @@ final class MutexXCTests: XCTestCase {
         }
     }
 }
+
+extension Mutex {
+    func unsafeLock() { storage.lock() }
+    func unsafeUnlock() { storage.unlock() }
+}
+#endif
